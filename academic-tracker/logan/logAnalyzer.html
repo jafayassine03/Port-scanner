@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log Analyzer Pro</title>
+<link rel="stylesheet" href="loganz.css">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Log Analyzer Pro</h1>
+
+<div id="dropZone" class="card">
+<h3>📂 Drag & Drop Log Files Here</h3>
+<p>or use the file picker below</p>
+</div>
+
+<input type="file" id="fileInput" accept=".log,.txt">
+
+<input
+type="text"
+id="searchBox"
+placeholder="Search logs..."
+>
+
+<div class="stats">
+
+<div class="card">
+<h2 id="totalLogs">0</h2>
+<p>Total Lines</p>
+</div>
+
+<div class="card">
+<h2 id="infoCount">0</h2>
+<p>INFO</p>
+</div>
+
+<div class="card">
+<h2 id="warningCount">0</h2>
+<p>WARNING</p>
+</div>
+
+<div class="card">
+<h2 id="errorCount">0</h2>
+<p>ERROR</p>
+</div>
+
+<div class="card">
+<h2 id="criticalCount">0</h2>
+<p>CRITICAL</p>
+</div>
+
+<div class="card">
+<h2 id="filteredCount">0</h2>
+<p>Filtered Results</p>
+</div>
+
+</div>
+
+<div class="stats">
+
+<div class="card">
+<h2 id="fileName">-</h2>
+<p>File Name</p>
+</div>
+
+<div class="card">
+<h2 id="uploadTime">-</h2>
+<p>Uploaded</p>
+</div>
+
+<div class="card">
+<h2 id="severity">-</h2>
+<p>Highest Severity</p>
+</div>
+
+</div>
+
+<div class="actions">
+
+<button id="showAll">Show All</button>
+
+<button id="showInfo">INFO</button>
+
+<button id="showWarnings">WARNING</button>
+
+<button id="showErrors">ERROR</button>
+
+<button id="showCritical">CRITICAL</button>
+
+<button id="exportLogs">Export Logs</button>
+
+<button id="clearLogs">Clear</button>
+
+<button id="toggleTheme">🌙 Dark Mode</button>
+
+</div>
+
+<div class="chart-container">
+<canvas id="logChart"></canvas>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+<h3 style="margin-bottom:10px;">Summary</h3>
+
+<p>Total INFO:
+<span id="infoPercent">0%</span>
+</p>
+
+<p>Total WARNING:
+<span id="warningPercent">0%</span>
+</p>
+
+<p>Total ERROR:
+<span id="errorPercent">0%</span>
+</p>
+
+<p>Total CRITICAL:
+<span id="criticalPercent">0%</span>
+</p>
+
+</div>
+
+<div class="logs" id="logs">
+<div class="empty-state">
+Upload a log file to begin analysis.
+</div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const fileInput =
+document.getElementById("fileInput");
+
+const searchBox =
+document.getElementById("searchBox");
+
+const logsDiv =
+document.getElementById("logs");
+
+const totalLogs =
+document.getElementById("totalLogs");
+
+const infoCount =
+document.getElementById("infoCount");
+
+const warningCount =
+document.getElementById("warningCount");
+
+const errorCount =
+document.getElementById("errorCount");
+
+const criticalCount =
+document.getElementById("criticalCount");
+
+const filteredCount =
+document.getElementById("filteredCount");
+
+const fileName =
+document.getElementById("fileName");
+
+const uploadTime =
+document.getElementById("uploadTime");
+
+const severity =
+document.getElementById("severity");
+
+const infoPercent =
+document.getElementById("infoPercent");
+
+const warningPercent =
+document.getElementById("warningPercent");
+
+const errorPercent =
+document.getElementById("errorPercent");
+const criticalPercent =
+document.getElementById("criticalPercent");
+
+const showAll =
+document.getElementById("showAll");
+
+const showInfo =
+document.getElementById("showInfo");
+
+const showWarnings =
+document.getElementById("showWarnings");
+
+const showErrors =
+document.getElementById("showErrors");
+
+const showCritical =
+document.getElementById("showCritical");
+
+const exportLogs =
+document.getElementById("exportLogs");
+
+const clearLogs =
+document.getElementById("clearLogs");
+
+const toggleTheme =
+document.getElementById("toggleTheme");
+
+const dropZone =
+document.getElementById("dropZone");
+
+let allLogs = [];
+let currentLogs = [];
+let chart;
+
+function createChart(info, warning, error, critical) {
+
+    const ctx =
+    document.getElementById("logChart");
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: [
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+            ],
+            datasets: [{
+                data: [
+                    info,
+                    warning,
+                    error,
+                    critical
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function highlight(text, term) {
+
+    if (!term) return text;
+
+    const regex =
+    new RegExp(`(${term})`, "gi");
+
+    return text.replace(
+        regex,
+        "<mark>$1</mark>"
+    );
+}
+
+function displayLogs(lines) {
+
+    currentLogs = [...lines];
+
+    filteredCount.textContent =
+    lines.length;
+
+    logsDiv.innerHTML = "";
+
+    if (!lines.length) {
+
+        logsDiv.innerHTML =
+        '<div class="empty-state">No matching log entries found.</div>';
+
+        return;
+    }
+
+    const term =
+    searchBox.value.trim();
+
+    lines.forEach((line, index) => {
+
+        const div =
+        document.createElement("div");
+
+        div.classList.add(
+            "log-entry"
+        );
+
+        const upper =
+        line.toUpperCase();
+
+        if (
+            upper.includes("CRITICAL")
+        ) {
+            div.classList.add(
+                "critical"
+            );
+        }
+        else if (
+            upper.includes("ERROR")
+        ) {
+            div.classList.add(
+                "error"
+            );
+        }
+        else if (
+            upper.includes("WARNING")
+        ) {
+            div.classList.add(
+                "warning"
+            );
+        }
+        else if (
+            upper.includes("INFO")
+        ) {
+            div.classList.add(
+                "info"
+            );
+        }
+
+        div.innerHTML =
+        `<span class="line-number">${index + 1}</span> ${highlight(line, term)}`;
+
+        div.addEventListener(
+            "click",
+            async () => {
+
+                try {
+
+                    await navigator.clipboard.writeText(line);
+
+                    div.classList.add(
+                        "copied"
+                    );
+
+                    setTimeout(() => {
+                        div.classList.remove(
+                            "copied"
+                        );
+                    }, 1000);
+
+                } catch {}
+            }
+        );
+
+        logsDiv.appendChild(div);
+
+    });
+}
+
+function updateStats(lines) {
+
+    let info = 0;
+    let warning = 0;
+    let error = 0;
+    let critical = 0;
+
+    lines.forEach(line => {
+
+        const upper =
+        line.toUpperCase();
+
+        if (
+            upper.includes("CRITICAL")
+        ) {
+            critical++;
+        }
+        else if (
+            upper.includes("ERROR")
+        ) {
+            error++;
+        }
+        else if (
+            upper.includes("WARNING")
+        ) {
+            warning++;
+        }
+        else if (
+            upper.includes("INFO")
+        ) {
+            info++;
+        }
+
+    });
+
+    totalLogs.textContent =
+    lines.length;
+
+    infoCount.textContent =
+    info;
+
+    warningCount.textContent =
+    warning;
+
+    errorCount.textContent =
+    error;
+
+    criticalCount.textContent =
+    critical;
+
+    const total =
+    lines.length || 1;
+
+    infoPercent.textContent =
+    ((info / total) * 100)
+    .toFixed(1) + "%";
+
+    warningPercent.textContent =
+    ((warning / total) * 100)
+    .toFixed(1) + "%";
+
+    errorPercent.textContent =
+    ((error / total) * 100)
+    .toFixed(1) + "%";
+
+    criticalPercent.textContent =
+    ((critical / total) * 100)
+    .toFixed(1) + "%";
+
+    let highest =
+    "INFO";
+
+    if (critical > 0)
+        highest = "CRITICAL";
+    else if (error > 0)
+        highest = "ERROR";
+    else if (warning > 0)
+        highest = "WARNING";
+
+    severity.textContent =
+    highest;
+
+    createChart(
+        info,
+        warning,
+        error,
+        critical
+    );
+}
+
+function processFile(file) {
+
+    if (!file) return;
+
+    fileName.textContent =
+    file.name;
+
+    uploadTime.textContent =
+    new Date()
+    .toLocaleTimeString();
+
+    const reader =
+    new FileReader();
+
+    reader.onload =
+    e => {
+
+        allLogs =
+        e.target.result
+        .split("\n")
+        .filter(
+            line =>
+            line.trim() !== ""
+        );
+
+        updateStats(allLogs);
+
+        displayLogs(allLogs);
+    };
+
+    reader.readAsText(file);
+}
+
+fileInput.addEventListener(
+    "change",
+    e => {
+        processFile(
+            e.target.files[0]
+        );
+    }
+);
+
+dropZone.addEventListener(
+    "dragover",
+    e => {
+        e.preventDefault();
+    }
+);
+
+dropZone.addEventListener(
+    "drop",
+    e => {
+
+        e.preventDefault();
+
+        const file =
+        e.dataTransfer.files[0];
+
+        processFile(file);
+    }
+);
+
+searchBox.addEventListener(
+    "input",
+    () => {
+
+        const term =
+        searchBox.value
+        .toLowerCase();
+
+        const filtered =
+        allLogs.filter(
+            line =>
+            line
+            .toLowerCase()
+            .includes(term)
+        );
+
+        displayLogs(filtered);
+    }
+);
+
+showAll.addEventListener(
+    "click",
+    () => displayLogs(allLogs)
+);
+
+showInfo.addEventListener(
+    "click",
+    () =>
+    displayLogs(
+        allLogs.filter(
+            line =>
+            line
+            .toUpperCase()
+            .includes("INFO")
+        )
+    )
+);
+
+showWarnings.addEventListener(
+    "click",
+    () =>
+    displayLogs(
+        allLogs.filter(
+            line =>
+            line
+            .toUpperCase()
+            .includes("WARNING")
+        )
+    )
+);
+
+showErrors.addEventListener(
+    "click",
+    () =>
+    displayLogs(
+        allLogs.filter(
+            line =>
+            line
+            .toUpperCase()
+            .includes("ERROR")
+        )
+    )
+);
+
+showCritical.addEventListener(
+    "click",
+    () =>
+    displayLogs(
+        allLogs.filter(
+            line =>
+            line
+            .toUpperCase()
+            .includes("CRITICAL")
+        )
+    )
+);
+
+clearLogs.addEventListener(
+    "click",
+    () => {
+
+        allLogs = [];
+        currentLogs = [];
+
+        logsDiv.innerHTML =
+        '<div class="empty-state">Logs Cleared</div>';
+
+        totalLogs.textContent = 0;
+        infoCount.textContent = 0;
+        warningCount.textContent = 0;
+        errorCount.textContent = 0;
+        criticalCount.textContent = 0;
+        filteredCount.textContent = 0;
+
+        fileName.textContent = "-";
+        uploadTime.textContent = "-";
+        severity.textContent = "-";
+
+        infoPercent.textContent = "0%";
+        warningPercent.textContent = "0%";
+        errorPercent.textContent = "0%";
+        criticalPercent.textContent = "0%";
+
+        if (chart) {
+            chart.destroy();
+        }
+    }
+);
+
+exportLogs.addEventListener(
+    "click",
+    () => {
+
+        if (
+            !currentLogs.length
+        ) return;
+
+        const blob =
+        new Blob(
+            [
+                currentLogs.join("\n")
+            ],
+            {
+                type:
+                "text/plain"
+            }
+        );
+
+        const url =
+        URL.createObjectURL(
+            blob
+        );
+
+        const a =
+        document.createElement(
+            "a"
+        );
+
+        a.href = url;
+
+        a.download =
+        "filtered_logs.txt";
+
+        a.click();
+
+        URL.revokeObjectURL(
+            url
+        );
+    }
+);
+
+toggleTheme.addEventListener(
+    "click",
+    () => {
+
+        document.body
+        .classList.toggle(
+            "light-mode"
+        );
+
+        toggleTheme.textContent =
+        document.body.classList.contains(
+            "light-mode"
+        )
+        ? "☀️ "
+        : "🌙";
+    }
+);
+
+</script>
+
+</body>
+</html>

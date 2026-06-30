@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Clone</title>
+  <link rel="stylesheet" href="GoogleClone.css">
+</head>
+
+<body>
+
+  <header>
+    <nav>
+      <ul>
+        <li><a href="#">Gmail</a></li>
+        <li><a href="#">Images</a></li>
+        <li><button type="button" id="themeToggle">🌙</button></li>
+        <li><button type="button">Sign in</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <img 
+      src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" 
+      alt="Google Logo">
+
+    <form id="searchForm" autocomplete="off">
+      <input 
+        type="text" 
+        id="searchInput"
+        name="q"
+        placeholder="Search Google or type a URL"
+        autofocus
+        aria-label="Search">
+      
+      <div id="searchHistory" class="history-box"></div>
+
+      <div class="buttons">
+        <button type="submit">Google Search</button>
+        <button type="button" id="luckyBtn">I'm Feeling Lucky</button>
+      </div>
+    </form>
+  </main>
+
+  <footer>
+    <nav>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Advertising</a></li>
+        <li><a href="#">Business</a></li>
+      </ul>
+    </nav>
+
+    <nav>
+      <ul>
+        <li><a href="#">Privacy</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Settings</a></li>
+      </ul>
+    </nav>
+  </footer>
+
+  <script src="Googleclone.js"></script>
+</body>
+</html>

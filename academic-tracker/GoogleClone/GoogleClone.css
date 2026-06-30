@@ -1,0 +1,159 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+header ul {
+  list-style: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 0;
+}
+
+header a {
+  text-decoration: none;
+  color: #000;
+  font-size: 14px;
+}
+
+header a:hover {
+  text-decoration: underline;
+}
+
+header button {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+header button:hover {
+  background: #1669c1;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 150px;
+}
+
+main img {
+  margin-bottom: 24px;
+  transition: transform 0.3s ease;
+}
+
+main img:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+input[type="text"] {
+  width: 520px;
+  padding: 12px 20px;
+  border-radius: 24px;
+  border: 1px solid #dfe1e5;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+input[type="text"]:hover,
+input[type="text"]:focus {
+  box-shadow: 0 1px 6px rgba(32,33,36,.28);
+  transform: scale(1.03);
+}
+
+.buttons {
+  margin-top: 24px;
+}
+
+.buttons button {
+  padding: 10px 16px;
+  margin: 0 6px;
+  border: none;
+  background: #f8f9fa;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.buttons button:hover {
+  border: 1px solid #dadce0;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #f2f2f2;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px;
+}
+
+footer ul {
+  list-style: none;
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+footer a {
+  text-decoration: none;
+  color: #70757a;
+  font-size: 14px;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+body.dark {
+  background-color: #202124;
+  color: white;
+}
+
+body.dark input {
+  background-color: #303134;
+  color: white;
+  border: 1px solid #5f6368;
+}
+
+body.dark button {
+  background-color: #303134;
+  color: white;
+  border: 1px solid #5f6368;
+}
+.theme-btn {
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.history-box {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.history-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #ccc;
+}
+
+.history-item:hover {
+  background-color: #f1f1f1;
+}
+body.dark .history-item:hover {
+  background-color: #3c4043;
+}
