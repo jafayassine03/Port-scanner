@@ -1,16 +1,18 @@
 import socket
 import threading
+import json
 from queue import Queue
 from datetime import datetime
+import time
 
 print("=" * 50)
-print("Simple Python Port Scanner")
+print("Advanced Python Port Scanner")
 print("=" * 50)
 
 target = input("Enter IP address or hostname: ")
 
 try:
-    target = socket.gethostbyname(target)
+    ip = socket.gethostbyname(target)
 except socket.gaierror:
     print("Invalid hostname.")
     exit()
@@ -18,12 +20,11 @@ except socket.gaierror:
 start_port = int(input("Start Port: "))
 end_port = int(input("End Port: "))
 
-print(f"\nScanning {target}...")
-print(f"Started: {datetime.now()}\n")
+total_ports = end_port - start_port + 1
 
-queue = Queue()
-open_ports = []
-lock = threading.Lock()
+print(f"\nTarget : {target}")
+print(f"IP     : {ip}")
+print(f"Scanning {total_ports} ports...\n")
 
 common_ports = {
     20: "FTP Data",
@@ -45,19 +46,43 @@ common_ports = {
     8080: "HTTP-Alt"
 }
 
+queue = Queue()
+lock = threading.Lock()
+
+open_ports = []
+scanned = 0
+
+start_time = time.time()
+
+
 def scan(port):
+    global scanned
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(0.5)
 
-    result = s.connect_ex((target, port))
+    try:
+        result = s.connect_ex((ip, port))
 
-    if result == 0:
-        service = common_ports.get(port, "Unknown")
         with lock:
-            open_ports.append((port, service))
-            print(f"[OPEN] {port:<5} {service}")
+            scanned += 1
+            print(f"\rProgress: {scanned}/{total_ports}", end="")
 
-    s.close()
+        if result == 0:
+            service = common_ports.get(port, "Unknown")
+            with lock:
+                open_ports.append({
+                    "port": port,
+                    "service": service
+                })
+                print(f"\n[OPEN] {port:<5} {service}")
+
+    except:
+        pass
+
+    finally:
+        s.close()
+
 
 def worker():
     while True:
@@ -65,30 +90,47 @@ def worker():
         scan(port)
         queue.task_done()
 
+
 for _ in range(100):
-    thread = threading.Thread(target=worker)
-    thread.daemon = True
-    thread.start()
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
 
 for port in range(start_port, end_port + 1):
     queue.put(port)
 
 queue.join()
 
-print("\n" + "=" * 50)
+elapsed = round(time.time() - start_time, 2)
+
+print("\n")
+print("=" * 50)
 print("Scan Complete")
 print("=" * 50)
 
-if open_ports:
-    print("Open Ports:")
-    for port, service in sorted(open_ports):
-        print(f"{port:<5} {service}")
+print(f"Target        : {target}")
+print(f"IP Address    : {ip}")
+print(f"Ports Scanned : {total_ports}")
+print(f"Open Ports    : {len(open_ports)}")
+print(f"Time Taken    : {elapsed} seconds")
 
-    with open("scan_results.txt", "w") as f:
-        f.write(f"Target: {target}\n\n")
-        for port, service in sorted(open_ports):
-            f.write(f"{port:<5} {service}\n")
+with open("scan_results.txt", "w") as f:
+    f.write(f"Target: {target}\n")
+    f.write(f"IP: {ip}\n")
+    f.write(f"Date: {datetime.now()}\n\n")
 
-    print("\nResults saved to scan_results.txt")
-else:
-    print("No open ports found.")
+    for port in open_ports:
+        f.write(f"{port['port']} - {port['service']}\n")
+
+with open("scan_results.json", "w") as f:
+    json.dump({
+        "target": target,
+        "ip": ip,
+        "scan_date": str(datetime.now()),
+        "ports_scanned": total_ports,
+        "time_taken": elapsed,
+        "open_ports": open_ports
+    }, f, indent=4)
+
+print("\nResults saved:")
+print(" - scan_results.txt")
+print(" - scan_results.json")
