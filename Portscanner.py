@@ -54,6 +54,25 @@ scanned = 0
 
 start_time = time.time()
 
+def grab_banner(port):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect((ip, port))
+
+        if port in [80, 8080]:
+            s.send(b"HEAD / HTTP/1.0\r\n\r\n")
+
+        banner = s.recv(1024).decode(errors="ignore").strip()
+        s.close()
+
+        if banner:
+            return banner.replace("\r", "").replace("\n", " ")[:120]
+
+    except:
+        pass
+
+    return "Unavailable"
 
 def scan(port):
     global scanned
@@ -70,12 +89,17 @@ def scan(port):
 
         if result == 0:
             service = common_ports.get(port, "Unknown")
+            banner = grab_banner(port)
+
             with lock:
                 open_ports.append({
                     "port": port,
-                    "service": service
+                    "service": service,
+                    "banner": banner
                 })
+
                 print(f"\n[OPEN] {port:<5} {service}")
+                print(f"       Banner: {banner}")
 
     except:
         pass
@@ -83,17 +107,14 @@ def scan(port):
     finally:
         s.close()
 
-
 def worker():
     while True:
         port = queue.get()
         scan(port)
         queue.task_done()
 
-
 for _ in range(100):
-    t = threading.Thread(target=worker, daemon=True)
-    t.start()
+    threading.Thread(target=worker, daemon=True).start()
 
 for port in range(start_port, end_port + 1):
     queue.put(port)
@@ -120,6 +141,7 @@ with open("scan_results.txt", "w") as f:
 
     for port in open_ports:
         f.write(f"{port['port']} - {port['service']}\n")
+        f.write(f"Banner: {port['banner']}\n\n")
 
 with open("scan_results.json", "w") as f:
     json.dump({
