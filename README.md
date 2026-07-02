@@ -11,6 +11,8 @@ A fast and lightweight multithreaded port scanner built with Python. This projec
 * Saves scan results to a text file
 * Simple command-line interface
 * Built using only Python's standard library
+* 
+* Built using only Python's standard library
 
 ## Requirements
 
