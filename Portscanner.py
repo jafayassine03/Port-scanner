@@ -1,6 +1,9 @@
 import socket
 import threading
 import json
+import subprocess
+import platform
+import re
 from queue import Queue
 from datetime import datetime
 import time
@@ -54,6 +57,34 @@ scanned = 0
 
 start_time = time.time()
 
+def detect_os():
+    try:
+        if platform.system().lower() == "windows":
+            cmd = ["ping", "-n", "1", ip]
+        else:
+            cmd = ["ping", "-c", "1", ip]
+
+        output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode(errors="ignore")
+
+        match = re.search(r"TTL=(\d+)", output, re.IGNORECASE)
+        if not match:
+            match = re.search(r"ttl=(\d+)", output)
+
+        if match:
+            ttl = int(match.group(1))
+
+            if ttl <= 64:
+                return f"Linux / Unix (TTL={ttl})"
+            elif ttl <= 128:
+                return f"Windows (TTL={ttl})"
+            elif ttl <= 255:
+                return f"Cisco / Network Device (TTL={ttl})"
+
+        return "Unknown"
+
+    except:
+        return "Unknown"
+
 def grab_banner(port):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,7 +92,7 @@ def grab_banner(port):
         s.connect((ip, port))
 
         if port in [80, 8080]:
-            s.send(b"HEAD / HTTP/1.0\r\n\r\n")
+            s.send(b"HEAD / HTTP/1.0\r\nHost: localhost\r\n\r\n")
 
         banner = s.recv(1024).decode(errors="ignore").strip()
         s.close()
@@ -123,6 +154,8 @@ queue.join()
 
 elapsed = round(time.time() - start_time, 2)
 
+os_guess = detect_os()
+
 print("\n")
 print("=" * 50)
 print("Scan Complete")
@@ -130,6 +163,7 @@ print("=" * 50)
 
 print(f"Target        : {target}")
 print(f"IP Address    : {ip}")
+print(f"Operating Sys : {os_guess}")
 print(f"Ports Scanned : {total_ports}")
 print(f"Open Ports    : {len(open_ports)}")
 print(f"Time Taken    : {elapsed} seconds")
@@ -137,6 +171,7 @@ print(f"Time Taken    : {elapsed} seconds")
 with open("scan_results.txt", "w") as f:
     f.write(f"Target: {target}\n")
     f.write(f"IP: {ip}\n")
+    f.write(f"Operating System: {os_guess}\n")
     f.write(f"Date: {datetime.now()}\n\n")
 
     for port in open_ports:
@@ -147,6 +182,7 @@ with open("scan_results.json", "w") as f:
     json.dump({
         "target": target,
         "ip": ip,
+        "operating_system": os_guess,
         "scan_date": str(datetime.now()),
         "ports_scanned": total_ports,
         "time_taken": elapsed,
