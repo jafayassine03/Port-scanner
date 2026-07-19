@@ -4,6 +4,7 @@ import json
 import subprocess
 import platform
 import re
+import csv
 from queue import Queue
 from datetime import datetime
 import time
@@ -173,7 +174,6 @@ with open("scan_results.txt", "w") as f:
     f.write(f"IP: {ip}\n")
     f.write(f"Operating System: {os_guess}\n")
     f.write(f"Date: {datetime.now()}\n\n")
-
     for port in open_ports:
         f.write(f"{port['port']} - {port['service']}\n")
         f.write(f"Banner: {port['banner']}\n\n")
@@ -189,6 +189,13 @@ with open("scan_results.json", "w") as f:
         "open_ports": open_ports
     }, f, indent=4)
 
+with open("scan_results.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Port", "Service", "Banner"])
+    for port in open_ports:
+        writer.writerow([port["port"], port["service"], port["banner"]])
+
 print("\nResults saved:")
 print(" - scan_results.txt")
 print(" - scan_results.json")
+print(" - scan_results.csv")
