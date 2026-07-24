@@ -130,3 +130,15 @@ with open("scan_results.csv", "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["Port", "Service", "Banner"])
     for p in open_ports: writer.writerow([p["port"], p["service"], p["banner"]])
+
+with open("scan_summary.html", "w") as f:
+    f.write(f"<html><body><h1>Scan Report for {target} ({ip})</h1><p>OS: {os_guess}</p><p>Time Taken: {elapsed}s</p><table border='1'><tr><th>Port</th><th>Service</th><th>Banner</th></tr>")
+    for p in open_ports:
+        f.write(f"<tr><td>{p['port']}</td><td>{p['service']}</td><td>{p['banner']}</td></tr>")
+    f.write("</table></body></html>")
+
+print("\nResults saved:")
+print(" - scan_results.txt")
+print(" - scan_results.json")
+print(" - scan_results.csv")
+print(" - scan_summary.html")
