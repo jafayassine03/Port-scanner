@@ -239,4 +239,28 @@ if port_range_count:
     except:
         print("Invalid port list.")
 
+ping_sweep = input("\nPerform local subnet ping sweep? (y/n): ").lower()
+if ping_sweep == 'y':
+    print("Initiating subnet ping sweep...")
+    base_ip = ".".join(ip.split(".")[:3])
+    active_hosts = []
+    def sweep(host_ip):
+        if ping_target(host_ip):
+            with lock:
+                active_hosts.append(host_ip)
+                print(f"[ACTIVE] {host_ip}")
+    sweep_threads = []
+    for i in range(1, 255):
+        h_ip = f"{base_ip}.{i}"
+        t = threading.Thread(target=sweep, args=(h_ip,), daemon=True)
+        sweep_threads.append(t)
+        t.start()
+    for t in sweep_threads:
+        t.join()
+    with open("ping_sweep_results.txt", "w") as f:
+        f.write(f"Ping Sweep Results for Subnet {base_ip}.0/24\nDate: {datetime.now()}\n\n")
+        for h in active_hosts:
+            f.write(f"{h}\n")
+    print(f"Ping sweep complete. Found {len(active_hosts)} active hosts.")
+
 print("\nScan completed successfully!")
