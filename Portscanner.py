@@ -263,4 +263,23 @@ if ping_sweep == 'y':
             f.write(f"{h}\n")
     print(f"Ping sweep complete. Found {len(active_hosts)} active hosts.")
 
+port_vuln_check = input("\nCheck open ports against basic known high-risk signatures? (y/n): ").lower()
+if port_vuln_check == 'y' and open_ports:
+    print("Checking for common high-risk ports...")
+    risk_ports = {21: "FTP (Anonymous risk)", 23: "Telnet (Unencrypted)", 445: "SMB (Vulnerable to EternalBlue if unpatched)", 3389: "RDP (Brute-force risk)"}
+    found_risks = []
+    for p in open_ports:
+        if p['port'] in risk_ports:
+            found_risks.append((p['port'], risk_ports[p['port']]))
+            print(f"[RISK FOUND] Port {p['port']} - {risk_ports[p['port']]}")
+    
+    with open("vulnerability_report.txt", "w") as f:
+        f.write(f"Basic Vulnerability Signatures for {target} ({ip})\nDate: {datetime.now()}\n\n")
+        if found_risks:
+            for rp, desc in found_risks:
+                f.write(f"Port {rp}: {desc}\n")
+        else:
+            f.write("No high-risk signature ports found in open list.\n")
+    print(f"Vulnerability report saved. Found {len(found_risks)} high-risk indicators.")
+
 print("\nScan completed successfully!")
